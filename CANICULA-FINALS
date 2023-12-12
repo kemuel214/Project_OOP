@@ -1,0 +1,1964 @@
+using System;
+using System.Collections.Generic;
+using System.Xml.Linq;
+
+public class Program
+{
+    private static Dictionary<string, List<Workout>> weeklyWorkouts = new Dictionary<string, List<Workout>>
+    {
+        {"MONDAY", new List<Workout>()},
+        {"TUESDAY", new List<Workout>()},
+        {"WEDNESDAY", new List<Workout>()},
+        {"THURSDAY", new List<Workout>()},
+        {"FRIDAY", new List<Workout>()},
+        {"SATURDAY", new List<Workout>()},
+        {"SUNDAY", new List<Workout>()}
+    };
+
+    public static void Main()
+    {
+        while (true)
+        {
+            Console.Clear();
+            Console.WriteLine("Please choose an option: ");
+            Console.WriteLine("1: Calculate BMR");
+            Console.WriteLine("2: Plan a workout");
+            Console.WriteLine("3: Input Calories taken");
+            Console.WriteLine("4: Exit");
+            Console.WriteLine("__________________________________________________");
+            Console.Write("Enter Here: ");
+            string choice = Console.ReadLine();
+
+            Console.WriteLine();
+
+            switch (choice)
+            {
+                case "1":
+                    CalculateBMR();
+                    break;
+                case "2":                   
+                    PlanWorkout();
+                    break;
+                case "3":
+                    InputCaloriesTaken();
+                    break;
+                case "4":
+                    Environment.Exit(0);
+                    break;
+                default:
+                    Console.WriteLine("Invalid option");
+                    Console.ReadKey();
+                    break;
+            }
+        }
+    }
+    public static void SaveWorkoutsToFile(Dictionary<string, List<Workout>> weeklyWorkouts, string filePath)
+    {
+        using (StreamWriter writer = new StreamWriter(filePath))
+        {
+            foreach (var kvp in weeklyWorkouts)
+            {
+                foreach (var workout in kvp.Value)
+                {
+                    writer.WriteLine($"{kvp.Key},{workout.Name},{workout.Sets},{workout.Reps}");
+                }
+            }
+        }
+
+        Console.WriteLine("Workouts saved to file.");
+    }
+    public static void LoadWorkoutsFromFile(Dictionary<string, List<Workout>> weeklyWorkouts, string filePath)
+    {
+        if (File.Exists(filePath))
+        {
+            string[] lines = File.ReadAllLines(filePath);
+
+            foreach (var line in lines)
+            {
+                string[] values = line.Split(',');
+
+                if (values.Length == 4)
+                {
+                    string day = values[0];
+                    string name = values[1];
+                    int sets = int.Parse(values[2]);
+                    int reps = int.Parse(values[3]);
+
+                    Workout workout = new Workout(name, sets, reps);
+
+                    if (weeklyWorkouts.ContainsKey(day))
+                    {
+                        weeklyWorkouts[day].Add(workout);
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Invalid day: {day}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"Invalid line: {line}");
+                }
+            }
+
+            Console.WriteLine("Workouts loaded from file.");
+        }
+        else
+        {
+            Console.WriteLine("File not found. No workouts loaded.");
+        }
+    }
+
+    public static void PlanWorkout()
+    {
+        while (true)
+        {
+            DisplayWorkout();
+
+            string input = Console.ReadLine();
+
+            try
+            {
+                int choice = int.Parse(input);
+
+                switch (choice)
+                {
+                    case 1:
+                        Console.Clear();
+                        CreateWorkout(weeklyWorkouts);
+                        break;
+                    case 2:
+                        Console.Clear();
+                        ListWorkouts(weeklyWorkouts);
+                        Console.WriteLine("PRESS ANY KEY TO CONTINUE...");
+                        Console.ReadKey();
+                        break;
+                    case 3:
+                        Console.Clear();
+                        UpdateWorkout(weeklyWorkouts);
+                        break;
+                    case 4:
+                        Console.Clear();
+                        DeleteWorkout(weeklyWorkouts);
+                        break;
+                    case 5:
+                        ClearAllWorkouts();
+                        break;
+                    case 6:
+                        Console.Clear();
+                        SaveWorkoutsToFile(weeklyWorkouts, "workouts.csv");
+                        Console.ReadKey();
+                        break;
+                    case 7:
+                        Console.Clear();
+                        LoadWorkoutsFromFile(weeklyWorkouts, "workouts.csv");
+                        Console.ReadKey();
+                        break;
+                    case 8:
+                        return;
+                    default:
+                        Console.Clear();
+                        Console.WriteLine("Invalid option");
+                        break;
+                }
+            }
+            catch (FormatException)
+            {
+                Console.Clear();
+                Console.WriteLine("Invalid input. Please enter a valid option.");
+                Console.ReadKey();
+            }
+            catch (OverflowException)
+            {
+                Console.Clear();
+                Console.WriteLine("Invalid input. Please enter a valid option.");
+                Console.ReadKey();
+            }
+        }
+    }
+
+
+    public static void DisplayWorkout()
+    {
+        Console.Clear();
+        Console.WriteLine("Choose an option:");
+        Console.WriteLine("1. Add a workout");
+        Console.WriteLine("2. List all workouts");
+        Console.WriteLine("3. Update a workout");
+        Console.WriteLine("4. Delete a workout");
+        Console.WriteLine("5. Delete all workouts");
+        Console.WriteLine("6. Save Workouts");
+        Console.WriteLine("7. Load Workouts");
+        Console.WriteLine("8. Go back");
+        Console.WriteLine("__________________________________________________");
+    }
+
+    public static void CreateWorkout(Dictionary<string, List<Workout>> weeklyWorkouts)
+{
+    Console.WriteLine("Enter workout name:");
+    string name = Console.ReadLine();
+
+    int sets;
+    while (true)
+    {
+        Console.WriteLine("Enter number of sets:");
+        try
+        {
+            sets = int.Parse(Console.ReadLine());
+            break;
+        }
+        catch (FormatException)
+        {
+            Console.WriteLine("Invalid input. Please enter a valid integer for sets.");
+        }
+    }
+
+    int reps;
+    while (true)
+    {
+        Console.WriteLine("Enter number of reps:");
+        try
+        {
+            reps = int.Parse(Console.ReadLine());
+            break;
+        }
+        catch (FormatException)
+        {
+            Console.WriteLine("Invalid input. Please enter a valid integer for reps.");
+        }
+    }
+
+    string day;
+    while (true)
+    {
+        Console.WriteLine("Enter the day of the week (Monday to Sunday):");
+        day = Console.ReadLine().ToUpper();
+
+        if (weeklyWorkouts.ContainsKey(day))
+        {
+            break;
+        }
+        else
+        {
+            Console.WriteLine("Invalid day. Please enter a valid day of the week.");
+        }
+    }
+
+    Workout workout = new Workout(name, sets, reps);
+    weeklyWorkouts[day].Add(workout);
+    Console.WriteLine("Workout added to " + day);
+    Console.WriteLine("PRESS ANY KEY TO CONTINUE...");
+    Console.ReadKey();
+}
+
+    public static void ListWorkouts(Dictionary<string, List<Workout>> weeklyWorkouts)
+    {
+        Console.Clear();
+        Console.WriteLine("Listing all workouts:");
+
+        foreach (var kvp in weeklyWorkouts)
+        {
+            Console.WriteLine($"{kvp.Key} Workouts:");
+
+            if (kvp.Value.Count == 0)
+            {
+                Console.WriteLine("REST DAY");
+            }
+            else
+            {
+                for (int i = 0; i < kvp.Value.Count; i++)
+                {
+                    Console.WriteLine($"[{i + 1}] {kvp.Value[i].Name} - {kvp.Value[i].Sets} sets - {kvp.Value[i].Reps} reps");
+                }
+            }
+            Console.WriteLine();
+        }
+    }
+
+
+    public static void UpdateWorkout(Dictionary<string, List<Workout>> weeklyWorkouts)
+    {
+        
+
+        ListWorkouts(weeklyWorkouts);
+
+        string day;
+        while (true)
+        {
+            Console.WriteLine("Enter the day of the week (Monday to Sunday):");
+            day = Console.ReadLine().ToUpper();
+
+            if (weeklyWorkouts.ContainsKey(day))
+            {
+                break;
+            }
+            else
+            {
+                Console.WriteLine("Invalid day. Please enter a valid day of the week.");
+            }
+        }
+        Console.WriteLine("Enter workout index to update:");
+        try
+        {
+            int index = int.Parse(Console.ReadLine());
+
+            if (index >= 1 && index <= weeklyWorkouts[day].Count)
+            {
+                index--; // Adjust for 0-based list indexing
+                Console.WriteLine("Enter workout name:");
+                string name = Console.ReadLine();
+
+                int sets;
+                while (true)
+                {
+                    Console.WriteLine("Enter number of sets:");
+                    sets = int.Parse(Console.ReadLine());
+                    break;
+                }
+
+                int reps;
+                while (true)
+                {
+                    Console.WriteLine("Enter number of reps:");
+                    reps = int.Parse(Console.ReadLine());
+                    break;
+                }
+
+                weeklyWorkouts[day][index] = new Workout(name, sets, reps);
+                Console.WriteLine("Workout updated");
+            }
+            else
+            {
+                Console.Clear();
+                Console.WriteLine("Invalid index");
+                Console.ReadKey();
+            }
+        }
+        catch (FormatException)
+        {
+            Console.Clear();
+            Console.WriteLine("Invalid input. Please enter a valid integer for the index.");
+            Console.ReadKey();
+        }
+        catch (OverflowException)
+        {
+            Console.Clear();
+            Console.WriteLine("Invalid input. Please enter a valid integer for the index.");
+            Console.ReadKey();
+        }
+    }
+
+
+    public static void DeleteWorkout(Dictionary<string, List<Workout>> weeklyWorkouts)
+    {
+        ListWorkouts(weeklyWorkouts);
+        Console.WriteLine("Enter the day of the week (Monday to Sunday):");
+        string day = Console.ReadLine().ToUpper();
+
+        if (weeklyWorkouts.ContainsKey(day))
+        {
+            
+            Console.WriteLine("Enter workout index to delete:");
+
+            try
+            {
+                int index = int.Parse(Console.ReadLine());
+
+                if (index >= 1 && index <= weeklyWorkouts[day].Count)
+                {
+                    index--; // Adjust for 0-based list indexing
+                    weeklyWorkouts[day].RemoveAt(index);
+                    Console.WriteLine("Workout deleted");
+                    Console.ReadKey();
+                }
+                else
+                {
+                    Console.Clear();
+                    Console.WriteLine("Invalid index");
+                    Console.ReadKey();
+                }
+            }
+            catch (FormatException)
+            {
+                Console.Clear();
+                Console.WriteLine("Invalid input. Please enter a valid integer for the index.");
+                Console.ReadKey();
+            }
+            catch (OverflowException)
+            {
+                Console.Clear();
+                Console.WriteLine("Invalid input. Please enter a valid integer for the index.");
+                Console.ReadKey();
+            }
+        }
+        else
+        {
+            Console.WriteLine("Invalid day. Please enter a valid day of the week.");
+            Console.ReadKey();
+        }
+    }
+
+    public static void ClearAllWorkouts()
+    {
+        foreach (var kvp in weeklyWorkouts)
+        {
+            kvp.Value.Clear();
+        }
+        Console.WriteLine("All workouts cleared.");
+        Console.ReadKey();
+    }
+    public static void CalculateBMR()
+    {
+        while (true)
+        {
+            Console.Clear();
+            Console.Write("Enter your sex (M/F): ");
+            char gender = Convert.ToChar(Console.ReadLine().ToUpper());
+
+            if (gender != 'M' && gender != 'F')
+            {
+                Console.WriteLine("Invalid input for gender. Please enter 'M' for Male or 'F' for Female.");
+                Console.WriteLine();
+                continue;
+            }
+
+            Console.Write("Enter your age: ");
+            if (!int.TryParse(Console.ReadLine(), out int age))
+            {
+                Console.WriteLine("Invalid input for age. Please enter a valid number.");
+                Console.WriteLine();
+                continue;
+            }
+
+            Console.Write("Enter your height (in cm): ");
+            if (!double.TryParse(Console.ReadLine(), out double height))
+            {
+                Console.WriteLine("Invalid input for height. Please enter a valid number.");
+                Console.WriteLine();
+                continue;
+            }
+
+            Console.Write("Enter your weight (in kg): ");
+            if (!double.TryParse(Console.ReadLine(), out double weight))
+            {
+                Console.WriteLine("Invalid input for weight. Please enter a valid number.");
+                Console.WriteLine();
+                continue;
+            }
+
+            if (char.ToUpper(gender) == 'M')
+            {
+                Male male = new Male(age, weight, height, weeklyWorkouts);
+                male.CalculateBMR();
+            }
+            else if (char.ToUpper(gender) == 'F')
+            {
+                Female female = new Female(age, weight, height, weeklyWorkouts);
+                female.CalculateBMR();
+            }
+            Console.Write("Calculate BMR again?[Y/N]: ");
+            char o = char.Parse(Console.ReadLine());
+            Console.WriteLine();
+
+                    if (char.ToUpper(o) == 'N')
+                    {
+                        break;
+                    }
+                    else if (char.ToUpper(o) == 'Y')
+                    {
+                        continue;
+                    }  
+
+        }
+
+    }
+
+    public static void InputCaloriesTaken()
+    {
+        Console.Clear();
+        List<int> calories = new List<int>();
+        int totalCalories = 0;
+
+        Console.WriteLine("Enter your calories intake one by one [Enter a non-integer to finish].");
+
+        while (true)
+        {
+            string input = Console.ReadLine();
+
+            if (string.IsNullOrWhiteSpace(input))
+            {
+                Console.WriteLine("Invalid input. Please enter a valid integer for calories.");
+                continue;
+            }
+
+            if (!int.TryParse(input, out int calorie))
+            {
+                Console.WriteLine("Calorie input complete.");
+                break; // Exit the loop if a non-integer is entered
+            }
+
+            if (calorie < 0)
+            {
+                Console.WriteLine("Calories cannot be negative. Please enter a non-negative value.");
+            }
+            else
+            {
+                calories.Add(calorie);
+                totalCalories += calorie;
+            }
+        }
+
+        if (calories.Count == 0)
+        {
+            Console.WriteLine("No calories entered.");
+        }
+        else
+        {
+            Console.WriteLine($"Your total calories intake is {totalCalories}");
+        }
+
+        Console.WriteLine("Press any key to continue...");
+        Console.ReadKey();
+    }
+
+}
+
+public class Workout
+{
+    public string Name { get; set; }
+    public int Sets { get; set; }
+    public int Reps { get; set; }
+
+    public Workout(string name, int sets, int reps)
+    {
+        Name = name;
+        Sets = sets;
+        Reps = reps;
+    }
+}
+
+
+abstract class BMR
+{
+    protected int age;
+    protected double weight;
+    protected double height;
+
+    public BMR(int age, double weight, double height)
+    {
+        this.age = age;
+        this.weight = weight;
+        this.height = height;
+    }
+
+    public abstract void CalculateBMR();
+}
+
+class Male : BMR
+{
+    private Dictionary<string, List<Workout>> weeklyWorkouts;
+    public Male(int age, double weight, double height, Dictionary<string, List<Workout>> weeklyWorkouts)
+        : base(age, weight, height)
+    {
+        this.weeklyWorkouts = weeklyWorkouts;
+    }
+
+    public override void CalculateBMR()
+    {
+        double bmr = (10 * weight) + (6.25 * height) - (5 * age) + 5;
+        while (true)
+        {
+            Console.WriteLine("Enter intensity");
+            Console.WriteLine("1: Sedentary (little or no exercise)");
+            Console.WriteLine("2: Lightly active (exercise 1–3 days/week)");
+            Console.WriteLine("3: Moderately active (exercise 3–5 days/week)");
+            Console.WriteLine("4: Active (exercise 6–7 days/week)");
+            Console.WriteLine("5: Very active (hard exercise 6–7 days/week)");
+            Console.WriteLine("_________________________________________________");
+
+        
+            string c = Console.ReadLine();
+            switch (c)
+                {
+                    case "1":
+                        bmr *= 1.2;
+                        Console.Write("Do you want a recommended workout plan?[Y/N]: ");
+                        char a = char.Parse(Console.ReadLine());
+                        Console.WriteLine();
+                        if (char.ToUpper(a) == 'Y')
+                        {
+                            if (age >= 14 && age <= 17)
+                            {
+                                Workout workout1 = new Workout("Push ups", 3, 8);
+                                weeklyWorkouts["MONDAY"].Add(workout1);
+                                Workout workout2 = new Workout("Inclined push ups", 3, 10);
+                                weeklyWorkouts["MONDAY"].Add(workout2);
+                                Workout workout3 = new Workout("Shoulder taps", 3, 10);
+                                weeklyWorkouts["MONDAY"].Add(workout3);
+
+                                Workout workout4 = new Workout("Sit-ups", 3, 10);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout4);
+                                Workout workout5 = new Workout("Leg raises", 3, 8);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout5);
+                                Workout workout6 = new Workout("Russian Twist", 3, 12);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout6);
+
+                                Workout workout7 = new Workout("Squats", 3, 10);
+                                weeklyWorkouts["FRIDAY"].Add(workout7);
+                                Workout workout8 = new Workout("Lunges", 3, 12);
+                                weeklyWorkouts["FRIDAY"].Add(workout8);
+                                Workout workout9 = new Workout("Jump Squats", 3, 12);
+                                weeklyWorkouts["FRIDAY"].Add(workout9);
+                            }
+                            else if (age >= 18 && age <= 30)
+                            {
+                                Workout workout1 = new Workout("Push-Ups", 3, 10);
+                                weeklyWorkouts["MONDAY"].Add(workout1);
+                                Workout workout2 = new Workout("Dips", 3, 8);
+                                weeklyWorkouts["MONDAY"].Add(workout2);
+                                Workout workout3 = new Workout("Pike Push-Ups", 3, 8);
+                                weeklyWorkouts["MONDAY"].Add(workout3);
+
+                                Workout workout4 = new Workout("Crunches", 3, 10);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout4);
+                                Workout workout5 = new Workout("Leg raises", 3, 8);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout5);
+                                Workout workout6 = new Workout("Bicycle Crunches", 3, 12);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout6);
+
+                                Workout workout7 = new Workout("Squats", 3, 10);
+                                weeklyWorkouts["FRIDAY"].Add(workout7);
+                                Workout workout8 = new Workout("Lunges", 3, 12);
+                                weeklyWorkouts["FRIDAY"].Add(workout8);
+                                Workout workout9 = new Workout("Jump Squats", 3, 12);
+                                weeklyWorkouts["FRIDAY"].Add(workout9);
+                            }
+                            else if (age >= 31 && age <= 40)
+                            {
+                                Workout workout1 = new Workout("Push-Ups", 3, 10);
+                                weeklyWorkouts["MONDAY"].Add(workout1);
+                                Workout workout2 = new Workout("Dips", 3, 8);
+                                weeklyWorkouts["MONDAY"].Add(workout2);
+                                Workout workout3 = new Workout("Pike Push-Ups", 3, 8);
+                                weeklyWorkouts["MONDAY"].Add(workout3);
+
+                                Workout workout4 = new Workout("Crunches", 3, 10);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout4);
+                                Workout workout5 = new Workout("Leg raises", 3, 8);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout5);
+                                Workout workout6 = new Workout("Bicycle Crunches", 3, 12);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout6);
+
+                                Workout workout7 = new Workout("Squats", 3, 10);
+                                weeklyWorkouts["FRIDAY"].Add(workout7);
+                                Workout workout8 = new Workout("Lunges", 3, 12);
+                                weeklyWorkouts["FRIDAY"].Add(workout8);
+                                Workout workout9 = new Workout("Step-Up", 3, 12);
+                                weeklyWorkouts["FRIDAY"].Add(workout9);
+                            }
+                            else if (age > 40)
+                            {
+                                Workout workout1 = new Workout("Push-Ups", 3, 10);
+                                weeklyWorkouts["MONDAY"].Add(workout1);
+                                Workout workout2 = new Workout("Dips", 3, 8);
+                                weeklyWorkouts["MONDAY"].Add(workout2);
+                                Workout workout3 = new Workout("Pike Push-Ups", 3, 8);
+                                weeklyWorkouts["MONDAY"].Add(workout3);
+
+                                Workout workout4 = new Workout("Crunches", 3, 10);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout4);
+                                Workout workout5 = new Workout("Leg raises", 3, 8);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout5);
+                                Workout workout6 = new Workout("Bicycle Crunches", 3, 12);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout6);
+
+                                Workout workout7 = new Workout("Squats", 3, 10);
+                                weeklyWorkouts["FRIDAY"].Add(workout7);
+                                Workout workout8 = new Workout("Lunges", 3, 12);
+                                weeklyWorkouts["FRIDAY"].Add(workout8);
+                                Workout workout9 = new Workout("Back Lunges", 3, 12);
+                                weeklyWorkouts["FRIDAY"].Add(workout9);
+                            }
+
+                        }
+
+                        break;
+                    case "2":
+                        bmr *= 1.375;
+                        Console.Write("Do you want a recommended workout plan?[Y/N]: ");
+                        a = char.Parse(Console.ReadLine());
+                        Console.WriteLine();
+                        if (char.ToUpper(a) == 'Y')
+                        {
+                            if (age >= 14 && age <= 17)
+                            {
+                                Workout workout1 = new Workout("Push ups", 3, 12);
+                                weeklyWorkouts["MONDAY"].Add(workout1);
+                                Workout workout2 = new Workout("Diamond push ups", 3, 10);
+                                weeklyWorkouts["MONDAY"].Add(workout2);
+                                Workout workout3 = new Workout("Pike Push-Ups", 3, 10);
+                                weeklyWorkouts["MONDAY"].Add(workout3);
+
+                                Workout workout4 = new Workout("Sit-up", 3, 15);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout4);
+                                Workout workout5 = new Workout("Bicycle Crunch", 3, 12);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout5);
+                                Workout workout6 = new Workout("Side Jack-Knives", 3, 12);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout6);
+
+                                Workout workout7 = new Workout("Squats", 3, 10);
+                                weeklyWorkouts["FRIDAY"].Add(workout7);
+                                Workout workout8 = new Workout("Lunges", 3, 12);
+                                weeklyWorkouts["FRIDAY"].Add(workout8);
+                                Workout workout9 = new Workout("Side-To-Side Lunges", 3, 12);
+                                weeklyWorkouts["FRIDAY"].Add(workout9);
+                            }
+                            else if (age >= 18 && age <= 30)
+                            {
+                                Workout workout1 = new Workout("Push ups", 3, 15);
+                                weeklyWorkouts["MONDAY"].Add(workout1);
+                                Workout workout2 = new Workout("Diamond push ups", 3, 12);
+                                weeklyWorkouts["MONDAY"].Add(workout2);
+                                Workout workout3 = new Workout("Pike Push-Ups", 3, 15);
+                                weeklyWorkouts["MONDAY"].Add(workout3);
+
+                                Workout workout4 = new Workout("Sit-up", 3, 20);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout4);
+                                Workout workout5 = new Workout("Bicycle Crunch", 3, 16);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout5);
+                                Workout workout6 = new Workout("Side Jack-Knives", 3, 14);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout6);
+
+                                Workout workout7 = new Workout("Squats", 3, 15);
+                                weeklyWorkouts["FRIDAY"].Add(workout7);
+                                Workout workout8 = new Workout("Lunges", 3, 16);
+                                weeklyWorkouts["FRIDAY"].Add(workout8);
+                                Workout workout9 = new Workout("Back Lunges", 3, 16);
+                                weeklyWorkouts["FRIDAY"].Add(workout9);
+                            }
+                            else if (age >= 31 && age <= 40)
+                            {
+                                Workout workout1 = new Workout("Push ups", 3, 15);
+                                weeklyWorkouts["MONDAY"].Add(workout1);
+                                Workout workout2 = new Workout("Diamond push ups", 3, 12);
+                                weeklyWorkouts["MONDAY"].Add(workout2);
+                                Workout workout3 = new Workout("Pike Push-Ups", 3, 15);
+                                weeklyWorkouts["MONDAY"].Add(workout3);
+
+                                Workout workout4 = new Workout("Sit-up", 3, 20);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout4);
+                                Workout workout5 = new Workout("Bicycle Crunch", 3, 16);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout5);
+                                Workout workout6 = new Workout("Side Jack-Knives", 3, 14);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout6);
+
+                                Workout workout7 = new Workout("Squats", 3, 15);
+                                weeklyWorkouts["FRIDAY"].Add(workout7);
+                                Workout workout8 = new Workout("Lunges", 3, 16);
+                                weeklyWorkouts["FRIDAY"].Add(workout8);
+                                Workout workout9 = new Workout("Back Lunges", 3, 16);
+                                weeklyWorkouts["FRIDAY"].Add(workout9);
+                            }
+                            else if (age > 40)
+                            {
+                                Workout workout1 = new Workout("Push ups", 3, 15);
+                                weeklyWorkouts["MONDAY"].Add(workout1);
+                                Workout workout2 = new Workout("Diamond push ups", 3, 12);
+                                weeklyWorkouts["MONDAY"].Add(workout2);
+                                Workout workout3 = new Workout("Pike Push-Ups", 3, 15);
+                                weeklyWorkouts["MONDAY"].Add(workout3);
+
+                                Workout workout4 = new Workout("Sit-up", 3, 20);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout4);
+                                Workout workout5 = new Workout("Bicycle Crunch", 3, 16);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout5);
+                                Workout workout6 = new Workout("Side Jack-Knives", 3, 14);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout6);
+
+                                Workout workout7 = new Workout("Squats", 3, 15);
+                                weeklyWorkouts["FRIDAY"].Add(workout7);
+                                Workout workout8 = new Workout("Lunges", 3, 16);
+                                weeklyWorkouts["FRIDAY"].Add(workout8);
+                                Workout workout9 = new Workout("Back Lunges", 3, 16);
+                                weeklyWorkouts["FRIDAY"].Add(workout9);
+                            }
+
+                        }
+                        break;
+                    case "3":
+                        bmr *= 1.55;
+                        Console.Write("Do you want a recommended workout plan?[Y/N]: ");
+                        a = char.Parse(Console.ReadLine());
+                        Console.WriteLine();
+                        if (char.ToUpper(a) == 'Y')
+                        {
+                            if (age >= 14 && age <= 17)
+                            {
+                                Workout workout1 = new Workout("Dumbell Bench Press", 4, 6);
+                                weeklyWorkouts["MONDAY"].Add(workout1);
+                                Workout workout2 = new Workout("Shoulder Press", 3, 8);
+                                weeklyWorkouts["MONDAY"].Add(workout2);
+                                Workout workout3 = new Workout("Dumbell Flyes", 3, 10);
+                                weeklyWorkouts["MONDAY"].Add(workout3);
+                                Workout workout4 = new Workout("Tricep Push Down", 3, 10);
+                                weeklyWorkouts["MONDAY"].Add(workout4);
+                                Workout workout5 = new Workout("Lateral Raises", 3, 12);
+                                weeklyWorkouts["MONDAY"].Add(workout5);
+
+                                Workout workout6 = new Workout("Lat Pull Down", 4, 12);
+                                weeklyWorkouts["TUESDAY"].Add(workout6);
+                                Workout workout7 = new Workout("Single-Arm Dumbbell Rows", 3, 10);
+                                weeklyWorkouts["TUESDAY"].Add(workout7);
+                                Workout workout8 = new Workout("Cable Rows", 3, 12);
+                                weeklyWorkouts["TUESDAY"].Add(workout8);
+                                Workout workout9 = new Workout("Dumbell Curls", 3, 12);
+                                weeklyWorkouts["TUESDAY"].Add(workout9);
+
+                                Workout workout10 = new Workout("Back Squats", 4, 10);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout10);
+                                Workout workout11 = new Workout("Bulgarian Split Squats", 3, 10);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout11);
+                                Workout workout12 = new Workout("Leg Extensions", 3, 12);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout12);
+                                Workout workout13 = new Workout("Calf Raises", 3, 15);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout13);
+
+                                Workout workout14 = new Workout("Dumbell Bench Press", 3, 12);
+                                weeklyWorkouts["FRIDAY"].Add(workout14);
+                                Workout workout15 = new Workout("Lat Pull Down", 3, 12);
+                                weeklyWorkouts["FRIDAY"].Add(workout15);
+                                Workout workout16 = new Workout("Tricep Push Down", 3, 12);
+                                weeklyWorkouts["FRIDAY"].Add(workout16);
+                                Workout workout17 = new Workout("Dumbell Curls", 3, 15);
+                                weeklyWorkouts["FRIDAY"].Add(workout17);
+                                Workout workout18 = new Workout("Lateral Raises", 3, 15);
+                                weeklyWorkouts["FRIDAY"].Add(workout18);
+
+                                Workout workout19 = new Workout("Goblet Squat", 3, 15);
+                                weeklyWorkouts["SATURDAY"].Add(workout19);
+                                Workout workout20 = new Workout("Weighted Lunges", 3, 12);
+                                weeklyWorkouts["SATURDAY"].Add(workout20);
+                                Workout workout21 = new Workout("Leg Extensions", 3, 12);
+                                weeklyWorkouts["SATURDAY"].Add(workout21);
+                                Workout workout22 = new Workout("Piston Squats", 3, 6);
+                                weeklyWorkouts["SATURDAY"].Add(workout22);
+                            }
+                            else if (age >= 18 && age <= 30)
+                            {
+                                Workout workout1 = new Workout("Bench Press", 4, 8);
+                                weeklyWorkouts["MONDAY"].Add(workout1);
+                                Workout workout2 = new Workout("Overhead Press", 3, 10);
+                                weeklyWorkouts["MONDAY"].Add(workout2);
+                                Workout workout3 = new Workout("Dumbell Flyes", 3, 12);
+                                weeklyWorkouts["MONDAY"].Add(workout3);
+                                Workout workout4 = new Workout("Dips", 3, 12);
+                                weeklyWorkouts["MONDAY"].Add(workout4);
+                                Workout workout5 = new Workout("Lateral Raises", 3, 15);
+                                weeklyWorkouts["MONDAY"].Add(workout5);
+
+                                Workout workout6 = new Workout("DeadLift", 4, 12);
+                                weeklyWorkouts["TUESDAY"].Add(workout6);
+                                Workout workout7 = new Workout("Pull Ups", 4, 10);
+                                weeklyWorkouts["TUESDAY"].Add(workout7);
+                                Workout workout8 = new Workout("Barbell Rows", 3, 12);
+                                weeklyWorkouts["TUESDAY"].Add(workout8);
+                                Workout workout9 = new Workout("Cable Rows", 3, 12);
+                                weeklyWorkouts["TUESDAY"].Add(workout9);
+                                Workout workout10 = new Workout("Dumbell Curls", 3, 12);
+                                weeklyWorkouts["TUESDAY"].Add(workout10);
+
+                                Workout workout11 = new Workout("Back Squats", 4, 10);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout11);
+                                Workout workout12 = new Workout("Weighted Lunges", 3, 12);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout12);
+                                Workout workout13 = new Workout("Leg press", 4, 10);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout13);
+                                Workout workout14 = new Workout("Calf Raises", 4, 15);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout14);
+
+                                Workout workout15 = new Workout("Dumbell Bench Press", 4, 12);
+                                weeklyWorkouts["FRIDAY"].Add(workout15);
+                                Workout workout16 = new Workout("Lat Pull Down", 4, 12);
+                                weeklyWorkouts["FRIDAY"].Add(workout16);
+                                Workout workout17 = new Workout("Tricep Push Down", 3, 15);
+                                weeklyWorkouts["FRIDAY"].Add(workout17);
+                                Workout workout18 = new Workout("Dumbell Curls", 3, 15);
+                                weeklyWorkouts["FRIDAY"].Add(workout18);
+                                Workout workout19 = new Workout("Lateral Raises", 4, 15);
+                                weeklyWorkouts["FRIDAY"].Add(workout19);
+
+                                Workout workout20 = new Workout("Back Squats", 3, 8);
+                                weeklyWorkouts["SATURDAY"].Add(workout20);
+                                Workout workout21 = new Workout("Power clean", 3, 10);
+                                weeklyWorkouts["SATURDAY"].Add(workout21);
+                                Workout workout22 = new Workout("Leg Extensions", 3, 12);
+                                weeklyWorkouts["SATURDAY"].Add(workout22);
+                                Workout workout23 = new Workout("Leg Curls", 3, 12);
+                                weeklyWorkouts["SATURDAY"].Add(workout23);
+                            }
+                            else if (age >= 31)
+                            {
+                                Workout workout1 = new Workout("Bench Press ", 4, 10);
+                                weeklyWorkouts["MONDAY"].Add(workout1);
+                                Workout workout2 = new Workout("Inclined Bench Press", 4, 8);
+                                weeklyWorkouts["MONDAY"].Add(workout2);
+                                Workout workout3 = new Workout("SHoulder Press", 3, 10);
+                                weeklyWorkouts["MONDAY"].Add(workout3);
+                                Workout workout4 = new Workout("Tricep Push Down", 3, 12);
+                                weeklyWorkouts["MONDAY"].Add(workout4);
+                                Workout workout5 = new Workout("Lateral Raises", 3, 15);
+                                weeklyWorkouts["MONDAY"].Add(workout5);
+
+                                Workout workout6 = new Workout("Pull Ups", 4, 10);
+                                weeklyWorkouts["TUESDAY"].Add(workout6);
+                                Workout workout7 = new Workout("Lat Pull Down", 4, 10);
+                                weeklyWorkouts["TUESDAY"].Add(workout7);
+                                Workout workout8 = new Workout("T-Bar Row", 3, 12);
+                                weeklyWorkouts["TUESDAY"].Add(workout8);
+                                Workout workout9 = new Workout("Cable Rows", 3, 12);
+                                weeklyWorkouts["TUESDAY"].Add(workout9);
+                                Workout workout10 = new Workout("Hammer Curls", 3, 12);
+                                weeklyWorkouts["TUESDAY"].Add(workout10);
+
+                                Workout workout11 = new Workout("Back Squats", 4, 6);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout11);
+                                Workout workout12 = new Workout("Weighted Lunges", 3, 12);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout12);
+                                Workout workout13 = new Workout("Leg Press", 4, 12);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout13);
+                                Workout workout14 = new Workout("Calf Raises", 4, 15);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout14);
+
+                                Workout workout15 = new Workout("Inclined Dumbell Press", 4, 12);
+                                weeklyWorkouts["FRIDAY"].Add(workout15);
+                                Workout workout16 = new Workout("Lat Pull Down", 4, 12);
+                                weeklyWorkouts["FRIDAY"].Add(workout16);
+                                Workout workout17 = new Workout("Tricep Push Down", 3, 15);
+                                weeklyWorkouts["FRIDAY"].Add(workout17);
+                                Workout workout18 = new Workout("Dumbell Curls", 3, 15);
+                                weeklyWorkouts["FRIDAY"].Add(workout18);
+                                Workout workout19 = new Workout("Lateral Raises", 4, 15);
+                                weeklyWorkouts["FRIDAY"].Add(workout19);
+
+                                Workout workout20 = new Workout("Goblet Squats", 3, 10);
+                                weeklyWorkouts["SATURDAY"].Add(workout20);
+                                Workout workout21 = new Workout("Walking Lunges", 3, 12);
+                                weeklyWorkouts["SATURDAY"].Add(workout21);
+                                Workout workout22 = new Workout("Leg Extensions", 3, 12);
+                                weeklyWorkouts["SATURDAY"].Add(workout22);
+                                Workout workout23 = new Workout("Leg Curls", 3, 12);
+                                weeklyWorkouts["SATURDAY"].Add(workout23);
+                            }
+
+                        }
+                        break;
+                    case "4":
+                        bmr *= 1.725;
+                        Console.Write("Do you want a recommended workout plan?[Y/N]: ");
+                        a = char.Parse(Console.ReadLine());
+                        Console.WriteLine();
+                        if (char.ToUpper(a) == 'Y')
+                        {
+                            if (age >= 14 && age <= 17)
+                            {
+                                Workout workout1 = new Workout("Bench Press ", 3, 10);
+                                weeklyWorkouts["MONDAY"].Add(workout1);
+                                Workout workout2 = new Workout("Inclined Dumbell Press", 3, 10);
+                                weeklyWorkouts["MONDAY"].Add(workout2);
+                                Workout workout3 = new Workout("Chest Flyes", 3, 15);
+                                weeklyWorkouts["MONDAY"].Add(workout3);
+                                Workout workout4 = new Workout("Tricep Push Down", 3, 12);
+                                weeklyWorkouts["MONDAY"].Add(workout4);
+                                Workout workout5 = new Workout("Dips", 3, 15);
+                                weeklyWorkouts["MONDAY"].Add(workout5);
+
+                                Workout workout6 = new Workout("Cable Rows", 3, 10);
+                                weeklyWorkouts["TUESDAY"].Add(workout6);
+                                Workout workout7 = new Workout("Lat Pulldowns", 3, 10);
+                                weeklyWorkouts["TUESDAY"].Add(workout7);
+                                Workout workout8 = new Workout("Single Arm Dumbell Rows", 3, 12);
+                                weeklyWorkouts["TUESDAY"].Add(workout8);
+                                Workout workout9 = new Workout("Dumbell Curls", 3, 12);
+                                weeklyWorkouts["TUESDAY"].Add(workout9);
+                                Workout workout10 = new Workout("Hammer Curls", 3, 12);
+                                weeklyWorkouts["TUESDAY"].Add(workout10);
+
+                                Workout workout11 = new Workout("Back Squats", 3, 8);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout11);
+                                Workout workout12 = new Workout("Weighted Lunges", 3, 12);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout12);
+                                Workout workout13 = new Workout("Leg Extension", 3, 12);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout13);
+                                Workout workout14 = new Workout("Calf Raises", 3, 15);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout14);
+
+                                Workout workout15 = new Workout("Overhead Press", 3, 8);
+                                weeklyWorkouts["THURSDAY"].Add(workout15);
+                                Workout workout16 = new Workout("Lateral Raises", 3, 12);
+                                weeklyWorkouts["THURSDAY"].Add(workout16);
+                                Workout workout17 = new Workout("Rear Delt Flyes", 3, 12);
+                                weeklyWorkouts["THURSDAY"].Add(workout17);
+                                Workout workout18 = new Workout("Sit Ups", 3, 15);
+                                weeklyWorkouts["THURSDAY"].Add(workout18);
+                                Workout workout19 = new Workout("V-Ups", 3, 15);
+                                weeklyWorkouts["THURSDAY"].Add(workout19);
+
+                                Workout workout20 = new Workout("Bench Press ", 3, 10);
+                                weeklyWorkouts["FRIDAY"].Add(workout20);
+                                Workout workout21 = new Workout("Inclined Dumbell Press", 3, 10);
+                                weeklyWorkouts["FRIDAY"].Add(workout21);
+                                Workout workout22 = new Workout("Chest Flyes", 3, 15);
+                                weeklyWorkouts["FRIDAY"].Add(workout22);
+                                Workout workout23 = new Workout("Tricep Push Down", 3, 12);
+                                weeklyWorkouts["FRIDAY"].Add(workout23);
+                                Workout workout24 = new Workout("Dips", 3, 15);
+                                weeklyWorkouts["FRIDAY"].Add(workout24);
+
+                                Workout workout25 = new Workout("Cable Rows", 3, 10);
+                                weeklyWorkouts["SATURDAY"].Add(workout25);
+                                Workout workout26 = new Workout("Lat Pulldowns", 3, 10);
+                                weeklyWorkouts["SATURDAY"].Add(workout26);
+                                Workout workout27 = new Workout("Single Arm Dumbell Rows", 3, 12);
+                                weeklyWorkouts["SATURDAY"].Add(workout27);
+                                Workout workout28 = new Workout("Dumbell Curls", 3, 12);
+                                weeklyWorkouts["SATURDAY"].Add(workout28);
+                                Workout workout29 = new Workout("Hammer Curls", 3, 12);
+                                weeklyWorkouts["SATURDAY"].Add(workout29);
+                            }
+                            else if (age >= 18)
+                            {
+                                Workout workout1 = new Workout("Bench Press ", 3, 10);
+                                weeklyWorkouts["MONDAY"].Add(workout1);
+                                Workout workout2 = new Workout("Inclined Dumbell Press", 3, 10);
+                                weeklyWorkouts["MONDAY"].Add(workout2);
+                                Workout workout3 = new Workout("Chest Flyes", 3, 15);
+                                weeklyWorkouts["MONDAY"].Add(workout3);
+                                Workout workout4 = new Workout("Tricep Push Down", 3, 12);
+                                weeklyWorkouts["MONDAY"].Add(workout4);
+                                Workout workout5 = new Workout("Dips", 3, 15);
+                                weeklyWorkouts["MONDAY"].Add(workout5);
+
+                                Workout workout6 = new Workout("Deadlift", 3, 10);
+                                weeklyWorkouts["TUESDAY"].Add(workout6);
+                                Workout workout7 = new Workout("Lat Pulldowns", 3, 10);
+                                weeklyWorkouts["TUESDAY"].Add(workout7);
+                                Workout workout8 = new Workout("Barbell Rows", 3, 12);
+                                weeklyWorkouts["TUESDAY"].Add(workout8);
+                                Workout workout9 = new Workout("Preacher Curls", 3, 12);
+                                weeklyWorkouts["TUESDAY"].Add(workout9);
+                                Workout workout10 = new Workout("Hammer Curls", 3, 12);
+                                weeklyWorkouts["TUESDAY"].Add(workout10);
+
+                                Workout workout11 = new Workout("Back Squats", 3, 8);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout11);
+                                Workout workout12 = new Workout("Romanian Deadlift", 3, 12);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout12);
+                                Workout workout13 = new Workout("Leg Press", 3, 12);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout13);
+                                Workout workout14 = new Workout("Walking Lunges", 3, 20);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout14);
+
+                                Workout workout15 = new Workout("Overhead Press", 3, 8);
+                                weeklyWorkouts["THURSDAY"].Add(workout15);
+                                Workout workout16 = new Workout("Lateral Raises", 3, 12);
+                                weeklyWorkouts["THURSDAY"].Add(workout16);
+                                Workout workout17 = new Workout("Rear Delt Flyes", 3, 12);
+                                weeklyWorkouts["THURSDAY"].Add(workout17);
+                                Workout workout18 = new Workout("Weighted Sit Ups", 3, 15);
+                                weeklyWorkouts["THURSDAY"].Add(workout18);
+                                Workout workout19 = new Workout("Rope Crunch", 3, 15);
+                                weeklyWorkouts["THURSDAY"].Add(workout19);
+
+                                Workout workout20 = new Workout("Bench Press ", 3, 10);
+                                weeklyWorkouts["FRIDAY"].Add(workout20);
+                                Workout workout21 = new Workout("Inclined Dumbell Press", 3, 10);
+                                weeklyWorkouts["FRIDAY"].Add(workout21);
+                                Workout workout22 = new Workout("Chest Flyes", 3, 15);
+                                weeklyWorkouts["FRIDAY"].Add(workout22);
+                                Workout workout23 = new Workout("Tricep Push Down", 3, 12);
+                                weeklyWorkouts["FRIDAY"].Add(workout23);
+                                Workout workout24 = new Workout("Dips", 3, 15);
+                                weeklyWorkouts["FRIDAY"].Add(workout24);
+
+                                Workout workout25 = new Workout("Deadlift", 3, 10);
+                                weeklyWorkouts["SATURDAY"].Add(workout25);
+                                Workout workout26 = new Workout("Lat Pulldowns", 3, 10);
+                                weeklyWorkouts["SATURDAY"].Add(workout26);
+                                Workout workout27 = new Workout("Barbell Rows", 3, 12);
+                                weeklyWorkouts["SATURDAY"].Add(workout27);
+                                Workout workout28 = new Workout("Preacher Curls", 3, 12);
+                                weeklyWorkouts["SATURDAY"].Add(workout28);
+                                Workout workout29 = new Workout("Hammer Curls", 3, 12);
+                                weeklyWorkouts["SATURDAY"].Add(workout29);
+                            }
+                        }
+                        break;
+                    case "5":
+                        bmr *= 1.9;
+                        Console.Write("Do you want a recommended workout plan?[Y/N]: ");
+                        a = char.Parse(Console.ReadLine());
+                        Console.WriteLine();
+                        if (char.ToUpper(a) == 'Y')
+                        {
+                            if (age >= 14 && age <= 17)
+                            {
+                                Workout workout1 = new Workout("Bench Press ", 4, 10);
+                                weeklyWorkouts["MONDAY"].Add(workout1);
+                                Workout workout2 = new Workout("Inclined Dumbell Press", 4, 10);
+                                weeklyWorkouts["MONDAY"].Add(workout2);
+                                Workout workout3 = new Workout("Chest Flyes", 4, 15);
+                                weeklyWorkouts["MONDAY"].Add(workout3);
+                                Workout workout4 = new Workout("Tricep Push Down", 4, 12);
+                                weeklyWorkouts["MONDAY"].Add(workout4);
+                                Workout workout5 = new Workout("Dips", 4, 15);
+                                weeklyWorkouts["MONDAY"].Add(workout5);
+
+                                Workout workout6 = new Workout("Cable Rows", 4, 10);
+                                weeklyWorkouts["TUESDAY"].Add(workout6);
+                                Workout workout7 = new Workout("Lat Pulldowns", 4, 10);
+                                weeklyWorkouts["TUESDAY"].Add(workout7);
+                                Workout workout8 = new Workout("Single Arm Dumbell Rows", 4, 12);
+                                weeklyWorkouts["TUESDAY"].Add(workout8);
+                                Workout workout9 = new Workout("Dumbell Curls", 4, 12);
+                                weeklyWorkouts["TUESDAY"].Add(workout9);
+                                Workout workout10 = new Workout("Hammer Curls", 4, 12);
+                                weeklyWorkouts["TUESDAY"].Add(workout10);
+
+                                Workout workout11 = new Workout("Back Squats", 4, 8);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout11);
+                                Workout workout12 = new Workout("Weighted Lunges", 4, 12);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout12);
+                                Workout workout13 = new Workout("Leg Extension", 4, 12);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout13);
+                                Workout workout14 = new Workout("Calf Raises", 4, 15);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout14);
+
+                                Workout workout15 = new Workout("Overhead Press", 4, 8);
+                                weeklyWorkouts["THURSDAY"].Add(workout15);
+                                Workout workout16 = new Workout("Lateral Raises", 4, 12);
+                                weeklyWorkouts["THURSDAY"].Add(workout16);
+                                Workout workout17 = new Workout("Rear Delt Flyes", 4, 12);
+                                weeklyWorkouts["THURSDAY"].Add(workout17);
+                                Workout workout18 = new Workout("Sit Ups", 4, 15);
+                                weeklyWorkouts["THURSDAY"].Add(workout18);
+                                Workout workout19 = new Workout("V-Ups", 4, 15);
+                                weeklyWorkouts["THURSDAY"].Add(workout19);
+
+                                Workout workout20 = new Workout("Bench Press ", 4, 10);
+                                weeklyWorkouts["FRIDAY"].Add(workout20);
+                                Workout workout21 = new Workout("Inclined Dumbell Press", 4, 10);
+                                weeklyWorkouts["FRIDAY"].Add(workout21);
+                                Workout workout22 = new Workout("Chest Flyes", 4, 15);
+                                weeklyWorkouts["FRIDAY"].Add(workout22);
+                                Workout workout23 = new Workout("Tricep Push Down", 4, 12);
+                                weeklyWorkouts["FRIDAY"].Add(workout23);
+                                Workout workout24 = new Workout("Dips", 4, 15);
+                                weeklyWorkouts["FRIDAY"].Add(workout24);
+
+                                Workout workout25 = new Workout("Cable Rows", 4, 10);
+                                weeklyWorkouts["SATURDAY"].Add(workout25);
+                                Workout workout26 = new Workout("Lat Pulldowns", 4, 10);
+                                weeklyWorkouts["SATURDAY"].Add(workout26);
+                                Workout workout27 = new Workout("Single Arm Dumbell Rows", 4, 12);
+                                weeklyWorkouts["SATURDAY"].Add(workout27);
+                                Workout workout28 = new Workout("Dumbell Curls", 4, 12);
+                                weeklyWorkouts["SATURDAY"].Add(workout28);
+                                Workout workout29 = new Workout("Hammer Curls", 4, 12);
+                                weeklyWorkouts["SATURDAY"].Add(workout29);
+                            }
+                            else if (age >= 18)
+                            {
+                                Workout workout1 = new Workout("Bench Press ", 4, 10);
+                                weeklyWorkouts["MONDAY"].Add(workout1);
+                                Workout workout2 = new Workout("Inclined Dumbell Press", 4, 10);
+                                weeklyWorkouts["MONDAY"].Add(workout2);
+                                Workout workout3 = new Workout("Chest Flyes", 4, 15);
+                                weeklyWorkouts["MONDAY"].Add(workout3);
+                                Workout workout4 = new Workout("Tricep Push Down", 4, 12);
+                                weeklyWorkouts["MONDAY"].Add(workout4);
+                                Workout workout5 = new Workout("Dips", 4, 15);
+                                weeklyWorkouts["MONDAY"].Add(workout5);
+
+                                Workout workout6 = new Workout("Deadlift", 4, 10);
+                                weeklyWorkouts["TUESDAY"].Add(workout6);
+                                Workout workout7 = new Workout("Lat Pulldowns", 4, 10);
+                                weeklyWorkouts["TUESDAY"].Add(workout7);
+                                Workout workout8 = new Workout("Barbell Rows", 4, 12);
+                                weeklyWorkouts["TUESDAY"].Add(workout8);
+                                Workout workout9 = new Workout("Preacher Curls", 4, 12);
+                                weeklyWorkouts["TUESDAY"].Add(workout9);
+                                Workout workout10 = new Workout("Hammer Curls", 4, 12);
+                                weeklyWorkouts["TUESDAY"].Add(workout10);
+
+                                Workout workout11 = new Workout("Back Squats", 4, 8);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout11);
+                                Workout workout12 = new Workout("Romanian Deadlift", 4, 12);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout12);
+                                Workout workout13 = new Workout("Leg Press", 4, 12);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout13);
+                                Workout workout14 = new Workout("Walking Lunges", 4, 20);
+                                weeklyWorkouts["WEDNESDAY"].Add(workout14);
+
+                                Workout workout15 = new Workout("Overhead Press", 4, 8);
+                                weeklyWorkouts["THURSDAY"].Add(workout15);
+                                Workout workout16 = new Workout("Lateral Raises", 4, 12);
+                                weeklyWorkouts["THURSDAY"].Add(workout16);
+                                Workout workout17 = new Workout("Rear Delt Flyes", 4, 12);
+                                weeklyWorkouts["THURSDAY"].Add(workout17);
+                                Workout workout18 = new Workout("Weighted Sit Ups", 4, 15);
+                                weeklyWorkouts["THURSDAY"].Add(workout18);
+                                Workout workout19 = new Workout("Rope Crunch", 4, 15);
+                                weeklyWorkouts["THURSDAY"].Add(workout19);
+
+                                Workout workout20 = new Workout("Bench Press ", 4, 10);
+                                weeklyWorkouts["FRIDAY"].Add(workout20);
+                                Workout workout21 = new Workout("Inclined Dumbell Press", 4, 10);
+                                weeklyWorkouts["FRIDAY"].Add(workout21);
+                                Workout workout22 = new Workout("Chest Flyes", 4, 15);
+                                weeklyWorkouts["FRIDAY"].Add(workout22);
+                                Workout workout23 = new Workout("Tricep Push Down", 4, 12);
+                                weeklyWorkouts["FRIDAY"].Add(workout23);
+                                Workout workout24 = new Workout("Dips", 4, 15);
+                                weeklyWorkouts["FRIDAY"].Add(workout24);
+
+                                Workout workout25 = new Workout("Deadlift", 4, 10);
+                                weeklyWorkouts["SATURDAY"].Add(workout25);
+                                Workout workout26 = new Workout("Lat Pulldowns", 4, 10);
+                                weeklyWorkouts["SATURDAY"].Add(workout26);
+                                Workout workout27 = new Workout("Barbell Rows", 4, 12);
+                                weeklyWorkouts["SATURDAY"].Add(workout27);
+                                Workout workout28 = new Workout("Preacher Curls", 4, 12);
+                                weeklyWorkouts["SATURDAY"].Add(workout28);
+                                Workout workout29 = new Workout("Hammer Curls", 4, 12);
+                                weeklyWorkouts["SATURDAY"].Add(workout29);
+                            }
+                        }
+                        break;
+                    default:
+                        Console.Clear();
+                        Console.WriteLine("Invalid option");
+                        continue;
+            }
+            Console.Clear();
+            Console.WriteLine($"Your BMR is {bmr:F0}");
+            Console.WriteLine("Your Recommended Workout plan:");
+            foreach (var kvp in weeklyWorkouts)
+            {
+                Console.WriteLine($"{kvp.Key} Workouts:");
+
+                if (kvp.Value.Count == 0)
+                {
+                    Console.WriteLine("REST DAY");
+                }
+                else
+                {
+                    for (int i = 0; i < kvp.Value.Count; i++)
+                    {
+                        Console.WriteLine($"[{i + 1}] {kvp.Value[i].Name} - {kvp.Value[i].Sets} sets - {kvp.Value[i].Reps} reps");
+                    }
+                }
+                Console.WriteLine();
+            }
+            break;
+        }
+        Console.WriteLine("PRESS ANY KEY TO CONTINUE...");
+        Console.ReadKey();
+    }
+}
+
+class Female : BMR
+{
+    private Dictionary<string, List<Workout>> weeklyWorkouts; // Add this field
+
+    public Female(int age, double weight, double height, Dictionary<string, List<Workout>> weeklyWorkouts)
+        : base(age, weight, height)
+    {
+        this.weeklyWorkouts = weeklyWorkouts;
+    }
+
+    public override void CalculateBMR()
+    {
+        double bmr = (10 * weight) + (6.25 * height) - (5 * age) - 161;
+        while (true)
+        {
+            Console.WriteLine("Enter intensity");
+            Console.WriteLine("1: Sedentary (little or no exercise)");
+            Console.WriteLine("2: Lightly active (exercise 1–3 days/week)");
+            Console.WriteLine("3: Moderately active (exercise 3–5 days/week)");
+            Console.WriteLine("4: Active (exercise 6–7 days/week)");
+            Console.WriteLine("5: Very active (hard exercise 6–7 days/week)");
+            Console.WriteLine("_________________________________________________");
+
+
+            string c = Console.ReadLine();
+            switch (c)
+            {
+                case "1":
+                    bmr *= 1.2;
+                    Console.Write("Do you want a recommended workout plan?[Y/N]: ");
+                    char a = char.Parse(Console.ReadLine());
+                    Console.WriteLine();
+                    if (char.ToUpper(a) == 'Y')
+                    {
+                        if (age >= 14 && age <= 17)
+                        {
+                            Workout workout1 = new Workout("Squats", 3, 12);
+                            weeklyWorkouts["MONDAY"].Add(workout1);
+                            Workout workout2 = new Workout("Lunges", 3, 12);
+                            weeklyWorkouts["MONDAY"].Add(workout2);
+                            Workout workout3 = new Workout("Glute Bridges", 3, 12);
+                            weeklyWorkouts["MONDAY"].Add(workout3);
+                            Workout workout4 = new Workout("Crunches", 3, 10);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout4);
+                            Workout workout5 = new Workout("Leg raises", 3, 8);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout5);
+                            Workout workout6 = new Workout("Russian Twist", 3, 12);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout6);
+                            Workout workout7 = new Workout("Burpees", 3, 10);
+                            weeklyWorkouts["FRIDAY"].Add(workout7);
+                            Workout workout8 = new Workout("Inclined Push Ups", 3, 10);
+                            weeklyWorkouts["FRIDAY"].Add(workout8);
+                            Workout workout9 = new Workout("Jumping Jacks", 3, 10);
+                            weeklyWorkouts["FRIDAY"].Add(workout9);
+                        }
+                        else if (age >= 18 && age <= 30)
+                        {
+                            Workout workout1 = new Workout("Squats", 3, 12);
+                            weeklyWorkouts["MONDAY"].Add(workout1);
+                            Workout workout2 = new Workout("Lunges", 3, 12);
+                            weeklyWorkouts["MONDAY"].Add(workout2);
+                            Workout workout3 = new Workout("Glute Bridges", 3, 12);
+                            weeklyWorkouts["MONDAY"].Add(workout3);
+                            Workout workout4 = new Workout("Crunches", 3, 10);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout4);
+                            Workout workout5 = new Workout("Leg raises", 3, 8);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout5);
+                            Workout workout6 = new Workout("Russian Twist", 3, 12);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout6);
+                            Workout workout7 = new Workout("Burpees", 3, 10);
+                            weeklyWorkouts["FRIDAY"].Add(workout7);
+                            Workout workout8 = new Workout("Inclined Push Ups", 3, 10);
+                            weeklyWorkouts["FRIDAY"].Add(workout8);
+                            Workout workout9 = new Workout("Jumping Jacks", 3, 10);
+                            weeklyWorkouts["FRIDAY"].Add(workout9);
+                        }
+                        else if (age >= 31 && age <= 40)
+                        {
+                            Workout workout1 = new Workout("Push-Ups", 3, 10);
+                            weeklyWorkouts["MONDAY"].Add(workout1);
+                            Workout workout2 = new Workout("Dips", 3, 8);
+                            weeklyWorkouts["MONDAY"].Add(workout2);
+                            Workout workout3 = new Workout("Inclined Push Ups", 3, 8);
+                            weeklyWorkouts["MONDAY"].Add(workout3);
+                            Workout workout4 = new Workout("Crunches", 3, 10);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout4);
+                            Workout workout5 = new Workout("Leg raises", 3, 8);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout5);
+                            Workout workout6 = new Workout("Bicycle Crunches", 3, 12);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout6);
+                            Workout workout7 = new Workout("Squats", 3, 10);
+                            weeklyWorkouts["FRIDAY"].Add(workout7);
+                            Workout workout8 = new Workout("Lunges", 3, 12);
+                            weeklyWorkouts["FRIDAY"].Add(workout8);
+                            Workout workout9 = new Workout("Step-Up", 3, 12);
+                            weeklyWorkouts["FRIDAY"].Add(workout9);
+                        }
+                        else if (age > 40)
+                        {
+                            Workout workout1 = new Workout("Push-Ups", 3, 10);
+                            weeklyWorkouts["MONDAY"].Add(workout1);
+                            Workout workout2 = new Workout("Dips", 3, 8);
+                            weeklyWorkouts["MONDAY"].Add(workout2);
+                            Workout workout3 = new Workout("Inclined Push-Ups", 3, 8);
+                            weeklyWorkouts["MONDAY"].Add(workout3);
+                            Workout workout4 = new Workout("Crunches", 3, 10);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout4);
+                            Workout workout5 = new Workout("Leg raises", 3, 8);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout5);
+                            Workout workout6 = new Workout("Bicycle Crunches", 3, 12);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout6);
+                            Workout workout7 = new Workout("Squats", 3, 10);
+                            weeklyWorkouts["FRIDAY"].Add(workout7);
+                            Workout workout8 = new Workout("Lunges", 3, 12);
+                            weeklyWorkouts["FRIDAY"].Add(workout8);
+                            Workout workout9 = new Workout("Back Lunges", 3, 12);
+                            weeklyWorkouts["FRIDAY"].Add(workout9);
+                        }
+
+                    }
+
+                    break;
+                case "2":
+                    bmr *= 1.375;
+                    Console.Write("Do you want a recommended workout plan?[Y/N]: ");
+                    a = char.Parse(Console.ReadLine());
+                    Console.WriteLine();
+                    if (char.ToUpper(a) == 'Y')
+                    {
+                        if (age >= 14 && age <= 17)
+                        {
+                            Workout workout1 = new Workout("Push ups", 3, 12);
+                            weeklyWorkouts["MONDAY"].Add(workout1);
+                            Workout workout2 = new Workout("Diamond push ups", 3, 10);
+                            weeklyWorkouts["MONDAY"].Add(workout2);
+                            Workout workout3 = new Workout("Pike Push-Ups", 3, 10);
+                            weeklyWorkouts["MONDAY"].Add(workout3);
+                            Workout workout4 = new Workout("Sit-up", 3, 15);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout4);
+                            Workout workout5 = new Workout("Bicycle Crunch", 3, 12);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout5);
+                            Workout workout6 = new Workout("Side Jack-Knives", 3, 12);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout6);
+                            Workout workout7 = new Workout("Squats", 3, 10);
+                            weeklyWorkouts["FRIDAY"].Add(workout7);
+                            Workout workout8 = new Workout("Lunges", 3, 12);
+                            weeklyWorkouts["FRIDAY"].Add(workout8);
+                            Workout workout9 = new Workout("Side-To-Side Lunges", 3, 12);
+                            weeklyWorkouts["FRIDAY"].Add(workout9);
+                        }
+                        else if (age >= 18 && age <= 30)
+                        {
+                            Workout workout1 = new Workout("Push ups", 3, 15);
+                            weeklyWorkouts["MONDAY"].Add(workout1);
+                            Workout workout2 = new Workout("Diamond push ups", 3, 12);
+                            weeklyWorkouts["MONDAY"].Add(workout2);
+                            Workout workout3 = new Workout("Pike Push-Ups", 3, 15);
+                            weeklyWorkouts["MONDAY"].Add(workout3);
+                            Workout workout4 = new Workout("Sit-up", 3, 20);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout4);
+                            Workout workout5 = new Workout("Bicycle Crunch", 3, 16);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout5);
+                            Workout workout6 = new Workout("Side Jack-Knives", 3, 14);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout6);
+                            Workout workout7 = new Workout("Squats", 3, 15);
+                            weeklyWorkouts["FRIDAY"].Add(workout7);
+                            Workout workout8 = new Workout("Lunges", 3, 16);
+                            weeklyWorkouts["FRIDAY"].Add(workout8);
+                            Workout workout9 = new Workout("Glute Bridge", 3, 16);
+                            weeklyWorkouts["FRIDAY"].Add(workout9);
+                        }
+                        else if (age >= 31 && age <= 40)
+                        {
+                            Workout workout1 = new Workout("Push ups", 3, 15);
+                            weeklyWorkouts["MONDAY"].Add(workout1);
+                            Workout workout2 = new Workout("Diamond push ups", 3, 12);
+                            weeklyWorkouts["MONDAY"].Add(workout2);
+                            Workout workout3 = new Workout("Pike Push-Ups", 3, 15);
+                            weeklyWorkouts["MONDAY"].Add(workout3);
+                            Workout workout4 = new Workout("Sit-up", 3, 20);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout4);
+                            Workout workout5 = new Workout("Bicycle Crunch", 3, 16);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout5);
+                            Workout workout6 = new Workout("Side Jack-Knives", 3, 14);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout6);
+                            Workout workout7 = new Workout("Squats", 3, 15);
+                            weeklyWorkouts["FRIDAY"].Add(workout7);
+                            Workout workout8 = new Workout("Glute Bridge", 3, 16);
+                            weeklyWorkouts["FRIDAY"].Add(workout8);
+                            Workout workout9 = new Workout("Back Lunges", 3, 16);
+                            weeklyWorkouts["FRIDAY"].Add(workout9);
+                        }
+                        else if (age > 40)
+                        {
+                            Workout workout1 = new Workout("Push ups", 3, 15);
+                            weeklyWorkouts["MONDAY"].Add(workout1);
+                            Workout workout2 = new Workout("Diamond push ups", 3, 12);
+                            weeklyWorkouts["MONDAY"].Add(workout2);
+                            Workout workout3 = new Workout("Pike Push-Ups", 3, 15);
+                            weeklyWorkouts["MONDAY"].Add(workout3);
+                            Workout workout4 = new Workout("Sit-up", 3, 20);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout4);
+                            Workout workout5 = new Workout("Bicycle Crunch", 3, 16);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout5);
+                            Workout workout6 = new Workout("Side Jack-Knives", 3, 14);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout6);
+                            Workout workout7 = new Workout("Squats", 3, 15);
+                            weeklyWorkouts["FRIDAY"].Add(workout7);
+                            Workout workout8 = new Workout("Glute Bridge", 3, 16);
+                            weeklyWorkouts["FRIDAY"].Add(workout8);
+                            Workout workout9 = new Workout("Back Lunges", 3, 16);
+                            weeklyWorkouts["FRIDAY"].Add(workout9);
+                        }
+                    }
+                    break;
+                case "3":
+                    bmr *= 1.55;
+                    Console.Write("Do you want a recommended workout plan?[Y/N]: ");
+                    a = char.Parse(Console.ReadLine());
+                    Console.WriteLine();
+                    if (char.ToUpper(a) == 'Y')
+                    {
+                        if (age >= 14 && age <= 17)
+                        {
+                            Workout workout1 = new Workout("Dumbell Bench Press", 4, 6);
+                            weeklyWorkouts["MONDAY"].Add(workout1);
+                            Workout workout2 = new Workout("Shoulder Press", 3, 8);
+                            weeklyWorkouts["MONDAY"].Add(workout2);
+                            Workout workout3 = new Workout("Dumbell Flyes", 3, 10);
+                            weeklyWorkouts["MONDAY"].Add(workout3);
+                            Workout workout4 = new Workout("Tricep Push Down", 3, 10);
+                            weeklyWorkouts["MONDAY"].Add(workout4);
+                            Workout workout5 = new Workout("Lateral Raises", 3, 12);
+                            weeklyWorkouts["MONDAY"].Add(workout5);
+
+                            Workout workout6 = new Workout("Lat Pull Down", 4, 12);
+                            weeklyWorkouts["TUESDAY"].Add(workout6);
+                            Workout workout7 = new Workout("Single-Arm Dumbbell Rows", 3, 10);
+                            weeklyWorkouts["TUESDAY"].Add(workout7);
+                            Workout workout8 = new Workout("Cable Rows", 3, 12);
+                            weeklyWorkouts["TUESDAY"].Add(workout8);
+                            Workout workout9 = new Workout("Dumbell Curls", 3, 12);
+                            weeklyWorkouts["TUESDAY"].Add(workout9);
+
+                            Workout workout10 = new Workout("Back Squats", 4, 10);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout10);
+                            Workout workout11 = new Workout("Bulgarian Split Squats", 3, 10);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout11);
+                            Workout workout12 = new Workout("Leg Extensions", 3, 12);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout12);
+                            Workout workout13 = new Workout("Calf Raises", 3, 15);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout13);
+
+                            Workout workout14 = new Workout("Dumbell Bench Press", 3, 12);
+                            weeklyWorkouts["FRIDAY"].Add(workout14);
+                            Workout workout15 = new Workout("Lat Pull Down", 3, 12);
+                            weeklyWorkouts["FRIDAY"].Add(workout15);
+                            Workout workout16 = new Workout("Tricep Push Down", 3, 12);
+                            weeklyWorkouts["FRIDAY"].Add(workout16);
+                            Workout workout17 = new Workout("Dumbell Curls", 3, 15);
+                            weeklyWorkouts["FRIDAY"].Add(workout17);
+                            Workout workout18 = new Workout("Lateral Raises", 3, 15);
+                            weeklyWorkouts["FRIDAY"].Add(workout18);
+
+                            Workout workout19 = new Workout("Goblet Squat", 3, 15);
+                            weeklyWorkouts["SATURDAY"].Add(workout19);
+                            Workout workout20 = new Workout("Weighted Lunges", 3, 12);
+                            weeklyWorkouts["SATURDAY"].Add(workout20);
+                            Workout workout21 = new Workout("Leg Extensions", 3, 12);
+                            weeklyWorkouts["SATURDAY"].Add(workout21);
+                            Workout workout22 = new Workout("Romanian Deadlift", 3, 6);
+                            weeklyWorkouts["SATURDAY"].Add(workout22);
+                        }
+                        else if (age >= 18 && age <= 30)
+                        {
+                            Workout workout1 = new Workout("Bench Press", 4, 8);
+                            weeklyWorkouts["MONDAY"].Add(workout1);
+                            Workout workout2 = new Workout("Overhead Press", 3, 10);
+                            weeklyWorkouts["MONDAY"].Add(workout2);
+                            Workout workout3 = new Workout("Dumbell Flyes", 3, 12);
+                            weeklyWorkouts["MONDAY"].Add(workout3);
+                            Workout workout4 = new Workout("Dips", 3, 12);
+                            weeklyWorkouts["MONDAY"].Add(workout4);
+                            Workout workout5 = new Workout("Lateral Raises", 3, 15);
+                            weeklyWorkouts["MONDAY"].Add(workout5);
+
+                            Workout workout6 = new Workout("DeadLift", 4, 12);
+                            weeklyWorkouts["TUESDAY"].Add(workout6);
+                            Workout workout7 = new Workout("Pull Ups", 4, 10);
+                            weeklyWorkouts["TUESDAY"].Add(workout7);
+                            Workout workout8 = new Workout("Barbell Rows", 3, 12);
+                            weeklyWorkouts["TUESDAY"].Add(workout8);
+                            Workout workout9 = new Workout("Cable Rows", 3, 12);
+                            weeklyWorkouts["TUESDAY"].Add(workout9);
+                            Workout workout10 = new Workout("Dumbell Curls", 3, 12);
+                            weeklyWorkouts["TUESDAY"].Add(workout10);
+
+                            Workout workout11 = new Workout("Back Squats", 4, 10);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout11);
+                            Workout workout12 = new Workout("Weighted Lunges", 3, 12);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout12);
+                            Workout workout13 = new Workout("Leg press", 4, 10);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout13);
+                            Workout workout14 = new Workout("Calf Raises", 4, 15);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout14);
+
+                            Workout workout15 = new Workout("Dumbell Bench Press", 4, 12);
+                            weeklyWorkouts["FRIDAY"].Add(workout15);
+                            Workout workout16 = new Workout("Lat Pull Down", 4, 12);
+                            weeklyWorkouts["FRIDAY"].Add(workout16);
+                            Workout workout17 = new Workout("Tricep Push Down", 3, 15);
+                            weeklyWorkouts["FRIDAY"].Add(workout17);
+                            Workout workout18 = new Workout("Dumbell Curls", 3, 15);
+                            weeklyWorkouts["FRIDAY"].Add(workout18);
+                            Workout workout19 = new Workout("Lateral Raises", 4, 15);
+                            weeklyWorkouts["FRIDAY"].Add(workout19);
+
+                            Workout workout20 = new Workout("Back Squats", 3, 8);
+                            weeklyWorkouts["SATURDAY"].Add(workout20);
+                            Workout workout21 = new Workout("Power clean", 3, 10);
+                            weeklyWorkouts["SATURDAY"].Add(workout21);
+                            Workout workout22 = new Workout("Leg Extensions", 3, 12);
+                            weeklyWorkouts["SATURDAY"].Add(workout22);
+                            Workout workout23 = new Workout("Leg Curls", 3, 12);
+                            weeklyWorkouts["SATURDAY"].Add(workout23);
+                        }
+                        else if (age >= 31)
+                        {
+                            Workout workout1 = new Workout("Bench Press ", 4, 10);
+                            weeklyWorkouts["MONDAY"].Add(workout1);
+                            Workout workout2 = new Workout("Inclined Bench Press", 4, 8);
+                            weeklyWorkouts["MONDAY"].Add(workout2);
+                            Workout workout3 = new Workout("SHoulder Press", 3, 10);
+                            weeklyWorkouts["MONDAY"].Add(workout3);
+                            Workout workout4 = new Workout("Tricep Push Down", 3, 12);
+                            weeklyWorkouts["MONDAY"].Add(workout4);
+                            Workout workout5 = new Workout("Lateral Raises", 3, 15);
+                            weeklyWorkouts["MONDAY"].Add(workout5);
+
+                            Workout workout6 = new Workout("Pull Ups", 4, 10);
+                            weeklyWorkouts["TUESDAY"].Add(workout6);
+                            Workout workout7 = new Workout("Lat Pull Down", 4, 10);
+                            weeklyWorkouts["TUESDAY"].Add(workout7);
+                            Workout workout8 = new Workout("T-Bar Row", 3, 12);
+                            weeklyWorkouts["TUESDAY"].Add(workout8);
+                            Workout workout9 = new Workout("Cable Rows", 3, 12);
+                            weeklyWorkouts["TUESDAY"].Add(workout9);
+                            Workout workout10 = new Workout("Hammer Curls", 3, 12);
+                            weeklyWorkouts["TUESDAY"].Add(workout10);
+
+                            Workout workout11 = new Workout("Back Squats", 4, 6);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout11);
+                            Workout workout12 = new Workout("Weighted Lunges", 3, 12);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout12);
+                            Workout workout13 = new Workout("Leg Press", 4, 12);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout13);
+                            Workout workout14 = new Workout("Calf Raises", 4, 15);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout14);
+
+                            Workout workout15 = new Workout("Inclined Dumbell Press", 4, 12);
+                            weeklyWorkouts["FRIDAY"].Add(workout15);
+                            Workout workout16 = new Workout("Lat Pull Down", 4, 12);
+                            weeklyWorkouts["FRIDAY"].Add(workout16);
+                            Workout workout17 = new Workout("Tricep Push Down", 3, 15);
+                            weeklyWorkouts["FRIDAY"].Add(workout17);
+                            Workout workout18 = new Workout("Dumbell Curls", 3, 15);
+                            weeklyWorkouts["FRIDAY"].Add(workout18);
+                            Workout workout19 = new Workout("Lateral Raises", 4, 15);
+                            weeklyWorkouts["FRIDAY"].Add(workout19);
+
+                            Workout workout20 = new Workout("Goblet Squats", 3, 10);
+                            weeklyWorkouts["SATURDAY"].Add(workout20);
+                            Workout workout21 = new Workout("Walking Lunges", 3, 12);
+                            weeklyWorkouts["SATURDAY"].Add(workout21);
+                            Workout workout22 = new Workout("Leg Extensions", 3, 12);
+                            weeklyWorkouts["SATURDAY"].Add(workout22);
+                            Workout workout23 = new Workout("Leg Curls", 3, 12);
+                            weeklyWorkouts["SATURDAY"].Add(workout23);
+                        }
+
+                    }
+                    break;
+                case "4":
+                    bmr *= 1.725;
+                    Console.Write("Do you want a recommended workout plan?[Y/N]: ");
+                    a = char.Parse(Console.ReadLine());
+                    Console.WriteLine();
+                    if (char.ToUpper(a) == 'Y')
+                    {
+                        if (age >= 14 && age <= 17)
+                        {
+                            Workout workout1 = new Workout("Bench Press ", 3, 10);
+                            weeklyWorkouts["MONDAY"].Add(workout1);
+                            Workout workout2 = new Workout("Inclined Dumbell Press", 3, 10);
+                            weeklyWorkouts["MONDAY"].Add(workout2);
+                            Workout workout3 = new Workout("Chest Flyes", 3, 15);
+                            weeklyWorkouts["MONDAY"].Add(workout3);
+                            Workout workout4 = new Workout("Tricep Push Down", 3, 12);
+                            weeklyWorkouts["MONDAY"].Add(workout4);
+                            Workout workout5 = new Workout("Dips", 3, 15);
+                            weeklyWorkouts["MONDAY"].Add(workout5);
+
+                            Workout workout6 = new Workout("Cable Rows", 3, 10);
+                            weeklyWorkouts["TUESDAY"].Add(workout6);
+                            Workout workout7 = new Workout("Lat Pulldowns", 3, 10);
+                            weeklyWorkouts["TUESDAY"].Add(workout7);
+                            Workout workout8 = new Workout("Single Arm Dumbell Rows", 3, 12);
+                            weeklyWorkouts["TUESDAY"].Add(workout8);
+                            Workout workout9 = new Workout("Dumbell Curls", 3, 12);
+                            weeklyWorkouts["TUESDAY"].Add(workout9);
+                            Workout workout10 = new Workout("Hammer Curls", 3, 12);
+                            weeklyWorkouts["TUESDAY"].Add(workout10);
+
+                            Workout workout11 = new Workout("Back Squats", 3, 8);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout11);
+                            Workout workout12 = new Workout("Weighted Lunges", 3, 12);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout12);
+                            Workout workout13 = new Workout("Leg Extension", 3, 12);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout13);
+                            Workout workout14 = new Workout("Calf Raises", 3, 15);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout14);
+
+                            Workout workout15 = new Workout("Overhead Press", 3, 8);
+                            weeklyWorkouts["THURSDAY"].Add(workout15);
+                            Workout workout16 = new Workout("Lateral Raises", 3, 12);
+                            weeklyWorkouts["THURSDAY"].Add(workout16);
+                            Workout workout17 = new Workout("Rear Delt Flyes", 3, 12);
+                            weeklyWorkouts["THURSDAY"].Add(workout17);
+                            Workout workout18 = new Workout("Sit Ups", 3, 15);
+                            weeklyWorkouts["THURSDAY"].Add(workout18);
+                            Workout workout19 = new Workout("V-Ups", 3, 15);
+                            weeklyWorkouts["THURSDAY"].Add(workout19);
+
+                            Workout workout20 = new Workout("Bench Press ", 3, 10);
+                            weeklyWorkouts["FRIDAY"].Add(workout20);
+                            Workout workout21 = new Workout("Inclined Dumbell Press", 3, 10);
+                            weeklyWorkouts["FRIDAY"].Add(workout21);
+                            Workout workout22 = new Workout("Chest Flyes", 3, 15);
+                            weeklyWorkouts["FRIDAY"].Add(workout22);
+                            Workout workout23 = new Workout("Tricep Push Down", 3, 12);
+                            weeklyWorkouts["FRIDAY"].Add(workout23);
+                            Workout workout24 = new Workout("Dips", 3, 15);
+                            weeklyWorkouts["FRIDAY"].Add(workout24);
+
+                            Workout workout25 = new Workout("Cable Rows", 3, 10);
+                            weeklyWorkouts["SATURDAY"].Add(workout25);
+                            Workout workout26 = new Workout("Lat Pulldowns", 3, 10);
+                            weeklyWorkouts["SATURDAY"].Add(workout26);
+                            Workout workout27 = new Workout("Single Arm Dumbell Rows", 3, 12);
+                            weeklyWorkouts["SATURDAY"].Add(workout27);
+                            Workout workout28 = new Workout("Dumbell Curls", 3, 12);
+                            weeklyWorkouts["SATURDAY"].Add(workout28);
+                            Workout workout29 = new Workout("Hammer Curls", 3, 12);
+                            weeklyWorkouts["SATURDAY"].Add(workout29);
+                        }
+                        else if (age >= 18)
+                        {
+                            Workout workout1 = new Workout("Bench Press ", 3, 10);
+                            weeklyWorkouts["MONDAY"].Add(workout1);
+                            Workout workout2 = new Workout("Inclined Dumbell Press", 3, 10);
+                            weeklyWorkouts["MONDAY"].Add(workout2);
+                            Workout workout3 = new Workout("Chest Flyes", 3, 15);
+                            weeklyWorkouts["MONDAY"].Add(workout3);
+                            Workout workout4 = new Workout("Tricep Push Down", 3, 12);
+                            weeklyWorkouts["MONDAY"].Add(workout4);
+                            Workout workout5 = new Workout("Dips", 3, 15);
+                            weeklyWorkouts["MONDAY"].Add(workout5);
+
+                            Workout workout6 = new Workout("Deadlift", 3, 10);
+                            weeklyWorkouts["TUESDAY"].Add(workout6);
+                            Workout workout7 = new Workout("Lat Pulldowns", 3, 10);
+                            weeklyWorkouts["TUESDAY"].Add(workout7);
+                            Workout workout8 = new Workout("Barbell Rows", 3, 12);
+                            weeklyWorkouts["TUESDAY"].Add(workout8);
+                            Workout workout9 = new Workout("Preacher Curls", 3, 12);
+                            weeklyWorkouts["TUESDAY"].Add(workout9);
+                            Workout workout10 = new Workout("Hammer Curls", 3, 12);
+                            weeklyWorkouts["TUESDAY"].Add(workout10);
+
+                            Workout workout11 = new Workout("Back Squats", 3, 8);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout11);
+                            Workout workout12 = new Workout("Romanian Deadlift", 3, 12);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout12);
+                            Workout workout13 = new Workout("Leg Press", 3, 12);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout13);
+                            Workout workout14 = new Workout("Walking Lunges", 3, 20);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout14);
+
+                            Workout workout15 = new Workout("Overhead Press", 3, 8);
+                            weeklyWorkouts["THURSDAY"].Add(workout15);
+                            Workout workout16 = new Workout("Lateral Raises", 3, 12);
+                            weeklyWorkouts["THURSDAY"].Add(workout16);
+                            Workout workout17 = new Workout("Rear Delt Flyes", 3, 12);
+                            weeklyWorkouts["THURSDAY"].Add(workout17);
+                            Workout workout18 = new Workout("Weighted Sit Ups", 3, 15);
+                            weeklyWorkouts["THURSDAY"].Add(workout18);
+                            Workout workout19 = new Workout("Rope Crunch", 3, 15);
+                            weeklyWorkouts["THURSDAY"].Add(workout19);
+
+                            Workout workout20 = new Workout("Bench Press ", 3, 10);
+                            weeklyWorkouts["FRIDAY"].Add(workout20);
+                            Workout workout21 = new Workout("Inclined Dumbell Press", 3, 10);
+                            weeklyWorkouts["FRIDAY"].Add(workout21);
+                            Workout workout22 = new Workout("Chest Flyes", 3, 15);
+                            weeklyWorkouts["FRIDAY"].Add(workout22);
+                            Workout workout23 = new Workout("Tricep Push Down", 3, 12);
+                            weeklyWorkouts["FRIDAY"].Add(workout23);
+                            Workout workout24 = new Workout("Dips", 3, 15);
+                            weeklyWorkouts["FRIDAY"].Add(workout24);
+
+                            Workout workout25 = new Workout("Deadlift", 3, 10);
+                            weeklyWorkouts["SATURDAY"].Add(workout25);
+                            Workout workout26 = new Workout("Lat Pulldowns", 3, 10);
+                            weeklyWorkouts["SATURDAY"].Add(workout26);
+                            Workout workout27 = new Workout("Barbell Rows", 3, 12);
+                            weeklyWorkouts["SATURDAY"].Add(workout27);
+                            Workout workout28 = new Workout("Preacher Curls", 3, 12);
+                            weeklyWorkouts["SATURDAY"].Add(workout28);
+                            Workout workout29 = new Workout("Hammer Curls", 3, 12);
+                            weeklyWorkouts["SATURDAY"].Add(workout29);
+                        }
+                    }
+                    break;
+                case "5":
+                    bmr *= 1.9;
+                    Console.Write("Do you want a recommended workout plan?[Y/N]: ");
+                    a = char.Parse(Console.ReadLine());
+                    Console.WriteLine();
+                    if (char.ToUpper(a) == 'Y')
+                    {
+                        if (age >= 14 && age <= 17)
+                        {
+                            Workout workout1 = new Workout("Bench Press ", 4, 10);
+                            weeklyWorkouts["MONDAY"].Add(workout1);
+                            Workout workout2 = new Workout("Inclined Dumbell Press", 4, 10);
+                            weeklyWorkouts["MONDAY"].Add(workout2);
+                            Workout workout3 = new Workout("Chest Flyes", 4, 15);
+                            weeklyWorkouts["MONDAY"].Add(workout3);
+                            Workout workout4 = new Workout("Tricep Push Down", 4, 12);
+                            weeklyWorkouts["MONDAY"].Add(workout4);
+                            Workout workout5 = new Workout("Dips", 4, 15);
+                            weeklyWorkouts["MONDAY"].Add(workout5);
+
+                            Workout workout6 = new Workout("Cable Rows", 4, 10);
+                            weeklyWorkouts["TUESDAY"].Add(workout6);
+                            Workout workout7 = new Workout("Lat Pulldowns", 4, 10);
+                            weeklyWorkouts["TUESDAY"].Add(workout7);
+                            Workout workout8 = new Workout("Single Arm Dumbell Rows", 4, 12);
+                            weeklyWorkouts["TUESDAY"].Add(workout8);
+                            Workout workout9 = new Workout("Dumbell Curls", 4, 12);
+                            weeklyWorkouts["TUESDAY"].Add(workout9);
+                            Workout workout10 = new Workout("Hammer Curls", 4, 12);
+                            weeklyWorkouts["TUESDAY"].Add(workout10);
+
+                            Workout workout11 = new Workout("Back Squats", 4, 8);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout11);
+                            Workout workout12 = new Workout("Weighted Lunges", 4, 12);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout12);
+                            Workout workout13 = new Workout("Leg Extension", 4, 12);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout13);
+                            Workout workout14 = new Workout("Calf Raises", 4, 15);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout14);
+
+                            Workout workout15 = new Workout("Overhead Press", 4, 8);
+                            weeklyWorkouts["THURSDAY"].Add(workout15);
+                            Workout workout16 = new Workout("Lateral Raises", 4, 12);
+                            weeklyWorkouts["THURSDAY"].Add(workout16);
+                            Workout workout17 = new Workout("Rear Delt Flyes", 4, 12);
+                            weeklyWorkouts["THURSDAY"].Add(workout17);
+                            Workout workout18 = new Workout("Sit Ups", 4, 15);
+                            weeklyWorkouts["THURSDAY"].Add(workout18);
+                            Workout workout19 = new Workout("V-Ups", 4, 15);
+                            weeklyWorkouts["THURSDAY"].Add(workout19);
+
+                            Workout workout20 = new Workout("Bench Press ", 4, 10);
+                            weeklyWorkouts["FRIDAY"].Add(workout20);
+                            Workout workout21 = new Workout("Inclined Dumbell Press", 4, 10);
+                            weeklyWorkouts["FRIDAY"].Add(workout21);
+                            Workout workout22 = new Workout("Chest Flyes", 4, 15);
+                            weeklyWorkouts["FRIDAY"].Add(workout22);
+                            Workout workout23 = new Workout("Tricep Push Down", 4, 12);
+                            weeklyWorkouts["FRIDAY"].Add(workout23);
+                            Workout workout24 = new Workout("Dips", 4, 15);
+                            weeklyWorkouts["FRIDAY"].Add(workout24);
+
+                            Workout workout25 = new Workout("Cable Rows", 4, 10);
+                            weeklyWorkouts["SATURDAY"].Add(workout25);
+                            Workout workout26 = new Workout("Lat Pulldowns", 4, 10);
+                            weeklyWorkouts["SATURDAY"].Add(workout26);
+                            Workout workout27 = new Workout("Single Arm Dumbell Rows", 4, 12);
+                            weeklyWorkouts["SATURDAY"].Add(workout27);
+                            Workout workout28 = new Workout("Dumbell Curls", 4, 12);
+                            weeklyWorkouts["SATURDAY"].Add(workout28);
+                            Workout workout29 = new Workout("Hammer Curls", 4, 12);
+                            weeklyWorkouts["SATURDAY"].Add(workout29);
+                        }
+                        else if (age >= 18)
+                        {
+                            Workout workout1 = new Workout("Bench Press ", 4, 10);
+                            weeklyWorkouts["MONDAY"].Add(workout1);
+                            Workout workout2 = new Workout("Inclined Dumbell Press", 4, 10);
+                            weeklyWorkouts["MONDAY"].Add(workout2);
+                            Workout workout3 = new Workout("Chest Flyes", 4, 15);
+                            weeklyWorkouts["MONDAY"].Add(workout3);
+                            Workout workout4 = new Workout("Tricep Push Down", 4, 12);
+                            weeklyWorkouts["MONDAY"].Add(workout4);
+                            Workout workout5 = new Workout("Dips", 4, 15);
+                            weeklyWorkouts["MONDAY"].Add(workout5);
+
+                            Workout workout6 = new Workout("Deadlift", 4, 10);
+                            weeklyWorkouts["TUESDAY"].Add(workout6);
+                            Workout workout7 = new Workout("Lat Pulldowns", 4, 10);
+                            weeklyWorkouts["TUESDAY"].Add(workout7);
+                            Workout workout8 = new Workout("Barbell Rows", 4, 12);
+                            weeklyWorkouts["TUESDAY"].Add(workout8);
+                            Workout workout9 = new Workout("Preacher Curls", 4, 12);
+                            weeklyWorkouts["TUESDAY"].Add(workout9);
+                            Workout workout10 = new Workout("Hammer Curls", 4, 12);
+                            weeklyWorkouts["TUESDAY"].Add(workout10);
+
+                            Workout workout11 = new Workout("Back Squats", 4, 8);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout11);
+                            Workout workout12 = new Workout("Romanian Deadlift", 4, 12);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout12);
+                            Workout workout13 = new Workout("Leg Press", 4, 12);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout13);
+                            Workout workout14 = new Workout("Walking Lunges", 4, 20);
+                            weeklyWorkouts["WEDNESDAY"].Add(workout14);
+
+                            Workout workout15 = new Workout("Overhead Press", 4, 8);
+                            weeklyWorkouts["THURSDAY"].Add(workout15);
+                            Workout workout16 = new Workout("Lateral Raises", 4, 12);
+                            weeklyWorkouts["THURSDAY"].Add(workout16);
+                            Workout workout17 = new Workout("Rear Delt Flyes", 4, 12);
+                            weeklyWorkouts["THURSDAY"].Add(workout17);
+                            Workout workout18 = new Workout("Weighted Sit Ups", 4, 15);
+                            weeklyWorkouts["THURSDAY"].Add(workout18);
+                            Workout workout19 = new Workout("Rope Crunch", 4, 15);
+                            weeklyWorkouts["THURSDAY"].Add(workout19);
+
+                            Workout workout20 = new Workout("Bench Press ", 4, 10);
+                            weeklyWorkouts["FRIDAY"].Add(workout20);
+                            Workout workout21 = new Workout("Inclined Dumbell Press", 4, 10);
+                            weeklyWorkouts["FRIDAY"].Add(workout21);
+                            Workout workout22 = new Workout("Chest Flyes", 4, 15);
+                            weeklyWorkouts["FRIDAY"].Add(workout22);
+                            Workout workout23 = new Workout("Tricep Push Down", 4, 12);
+                            weeklyWorkouts["FRIDAY"].Add(workout23);
+                            Workout workout24 = new Workout("Dips", 4, 15);
+                            weeklyWorkouts["FRIDAY"].Add(workout24);
+
+                            Workout workout25 = new Workout("Deadlift", 4, 10);
+                            weeklyWorkouts["SATURDAY"].Add(workout25);
+                            Workout workout26 = new Workout("Lat Pulldowns", 4, 10);
+                            weeklyWorkouts["SATURDAY"].Add(workout26);
+                            Workout workout27 = new Workout("Barbell Rows", 4, 12);
+                            weeklyWorkouts["SATURDAY"].Add(workout27);
+                            Workout workout28 = new Workout("Preacher Curls", 4, 12);
+                            weeklyWorkouts["SATURDAY"].Add(workout28);
+                            Workout workout29 = new Workout("Hammer Curls", 4, 12);
+                            weeklyWorkouts["SATURDAY"].Add(workout29);
+                        }
+                    }
+                    break;
+                default:
+                    Console.Clear();
+                    Console.WriteLine("Invalid option");
+                    continue;
+            }
+            Console.Clear();
+            Console.WriteLine($"Your BMR is {bmr:F0}");
+            Console.WriteLine("Your Recommended Workout plan:");
+            foreach (var kvp in weeklyWorkouts)
+            {
+                Console.WriteLine($"{kvp.Key} Workouts:");
+
+                if (kvp.Value.Count == 0)
+                {
+                    Console.WriteLine("REST DAY");
+                }
+                else
+                {
+                    for (int i = 0; i < kvp.Value.Count; i++)
+                    {
+                        Console.WriteLine($"[{i + 1}] {kvp.Value[i].Name} - {kvp.Value[i].Sets} sets - {kvp.Value[i].Reps} reps");
+                    }
+                }
+                Console.WriteLine();
+            }
+            break;
+        }
+        Console.WriteLine("PRESS ANY KEY TO CONTINUE...");
+        Console.ReadKey();
+    }
+
+}
